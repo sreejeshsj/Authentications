@@ -1,7 +1,8 @@
 
 const userModel = require("../model/user");
 const bcrypt = require("bcrypt");
-const jwt=require('jsonwebtoken')
+const jwt=require('jsonwebtoken');
+
 //register controller
 const registerUser = async (req, res) => {
   try {
@@ -102,7 +103,60 @@ const loginUser = async (req, res) => {
   }
 };
 
+
+//change password functionality
+const changePassword = async(req,res)=>{
+  try{
+    //getting userid from previous handler which is authMiddlerware
+    const userId=req.userinfo.userId
+
+    const {oldPassword,newPassword}=req.body
+   
+    //getting user with id == userId
+    const user=await userModel.findById(userId)
+
+    //check oldpassword is correct
+    const PasswordIsCorrect=await bcrypt.compare(oldPassword,user.password)
+
+    if (!PasswordIsCorrect){
+      return res.status(400).json({
+        success:false,
+        message:"Old password is not matching with user password"
+      })
+    }
+
+
+    if (oldPassword==newPassword){
+      return res.status(400).json({
+        success:false,
+        message:"Old and new password can not be same"
+      })
+    }
+
+    //hash the new password 
+    const salt = await bcrypt.genSalt(10)
+    const hashedPassword=await bcrypt.hash(newPassword,salt)
+userModel.fin
+    //updating the old password using new password(hashed password)
+    const updatePassword= await userModel.findByIdAndUpdate(userId,{password:hashedPassword},{new:true})
+
+    if(updatePassword){
+      return res.status(200).json({
+        success:true,
+        message:"password changed successfully",
+        updatePassword
+      })
+    }
+  }catch(err){
+    console.log(err)
+    res.status(500).json({
+      success:false,
+      message:"Something went wrong!"
+    }) 
+  }
+}
 module.exports = {
   registerUser,
   loginUser,
+  changePassword
 };
