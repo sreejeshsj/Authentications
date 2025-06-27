@@ -36,15 +36,32 @@ const uploadImageController = async (req, res) => {
 
 const fetchImageController=async (req,res)=>{
   try{
-    const userId=req.userinfo.userId
-    console.log(userId)
-    const fetchedImage=await Image.find({
-uploadedBy:userId
-}) 
+    //page number
+    const page=parseInt(req.query.page) || 1
+    //number of image per each page
+    const limit=parseInt(req.query.limit) || 2
+    const skip=(page - 1)*limit
+    //sort based on specific field
+    const sortBy=req.query.sortBy || 'createdAt'
+    //asc or dec
+    const sortOrder=req.query.sortOrder=='asc' ? 1 : -1
+    //total number of image
+    const totalImage=await Image.countDocuments()
+    //total number of pages
+    const totalPages=Math.ceil(totalImage/limit)
+    
+    const sortObj={}
+    sortObj[sortBy]=sortOrder
+
+    
+    const fetchedImage=await Image.find().sort(sortObj).skip(skip).limit(limit)
    
     return res.status(200).json({
       success:true,
       message:"Image fetched successfully",
+      currentPage:page,
+      totalPages:totalPages,
+      totalImage:totalImage,
       fetchedImage
     })
   }catch(err){
